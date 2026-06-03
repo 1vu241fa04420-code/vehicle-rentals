@@ -115,5 +115,24 @@ def seed_data():
 
     print("Database seeding completed.")
 
+def create_superuser():
+    from django.contrib.auth.models import User
+    username = 'manoharsai'
+    email = 'admin@example.com'
+    password = '7569291174'
+    
+    print("Checking for admin superuser...")
+    u = User.objects.filter(username__iexact=username).first()
+    if u:
+        print(f"Superuser '{u.username}' exists. Updating password...")
+        u.set_password(password)
+        u.is_superuser = True
+        u.is_staff = True
+        u.save()
+    else:
+        print(f"Creating superuser '{username}'...")
+        User.objects.create_superuser(username=username, email=email, password=password)
+
 if __name__ == '__main__':
     seed_data()
+    create_superuser()
