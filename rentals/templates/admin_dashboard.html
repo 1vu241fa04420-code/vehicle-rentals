@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Web Wizards Car Rentals - Admin Dashboard{% endblock %}
+
+{% block content %}
+<!-- Dashboard Welcome Header -->
+<div class="welcome-banner">
+    <div class="welcome-title">
+        <h1>Administrator Dashboard</h1>
+        <p>Review bookings, verify renter ID documents, and manage approval status.</p>
+    </div>
+</div>
+
+<div class="glass-card booking-history-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1rem;">
+        <h2 class="card-title" style="margin: 0;">All Customer Bookings</h2>
+        {% if bookings %}
+            <form action="{% url 'delete_all_bookings' %}" method="POST" style="margin: 0;" onsubmit="return confirm('WARNING: Are you sure you want to delete ALL bookings from the system? This action is permanent and cannot be undone!');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; font-weight: 600; background: var(--error); border-color: var(--error); box-shadow: 0 4px 15px rgba(255, 77, 77, 0.25); color: #000;">
+                    🗑️ Delete All Bookings
+                </button>
+            </form>
+        {% endif %}
+    </div>
+    
+    {% if bookings %}
+        <div class="history-table-wrapper">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Renter Name</th>
+                        <th>Age/Gender</th>
+                        <th>Vehicle</th>
+                        <th>Dates & Duration</th>
+                        <th>Total Amount</th>
+                        <th>ID Proof</th>
+                        <th>Booking Status</th>
+                        <th>Payment Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in bookings %}
+                        <tr>
+                            <td style="font-weight: 600;">#{{ b.id }}</td>
+                            <td>{{ b.user.username }}</td>
+                             <td>
+                                 <strong style="color: white;">{{ b.customer_name }}</strong>
+                                 <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.3;">
+                                     📞 {{ b.customer_phone }}
+                                     {% if b.customer_email %}
+                                         <br>✉️ {{ b.customer_email }}
+                                     {% endif %}
+                                 </div>
+                             </td>
+                            <td>{{ b.customer_age }} ({{ b.customer_gender }})</td>
+                            <td style="font-weight: 600;">
+                                {{ b.vehicle.name }}
+                                <div style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);">Vehicle Count: {{ b.quantity }}</div>
+                            </td>
+                            <td style="font-size: 0.9rem;">
+                                {{ b.start_date|date:"d M" }} - {{ b.end_date|date:"d M Y" }}
+                                <div style="font-size: 0.8rem; color: var(--text-muted);">({{ b.num_days }} Day{% if b.num_days > 1 %}s{% endif %})</div>
+                            </td>
+                            <td style="font-weight: 600; color: var(--secondary);">
+                                ₹{{ b.total_amount }}
+                                {% if b.balance_amount > 0 %}
+                                    <div style="font-size: 0.78rem; font-weight: normal; color: var(--text-muted); margin-top: 0.2rem; line-height: 1.2;">
+                                        Prepaid: <strong style="color: var(--secondary);">₹{{ b.prepaid_amount }}</strong>
+                                        <br>Balance: <strong style="color: var(--accent);">₹{{ b.balance_amount }}</strong>
+                                    </div>
+                                {% else %}
+                                    <div style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted); margin-top: 0.2rem;">(Fully Paid)</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if b.id_proof %}
+                                    <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                        <a href="{{ b.id_proof.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">
+                                            📄 Proof 1
+                                        </a>
+                                        {% if b.id_proof_2 %}<a href="{{ b.id_proof_2.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">📄 Proof 2</a>{% endif %}
+                                        {% if b.id_proof_3 %}<a href="{{ b.id_proof_3.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">📄 Proof 3</a>{% endif %}
+                                        {% if b.id_proof_4 %}<a href="{{ b.id_proof_4.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">📄 Proof 4</a>{% endif %}
+                                        {% if b.id_proof_5 %}<a href="{{ b.id_proof_5.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">📄 Proof 5</a>{% endif %}
+                                    </div>
+                                {% else %}
+                                    <span style="color: var(--text-muted); font-size: 0.85rem;">No Document</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="recent-badge {% if b.status == 'Confirmed' %}badge-completed{% else %}badge-rejected{% endif %}" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">
+                                    {{ b.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="recent-badge {% if b.payment_status == 'Completed' %}badge-completed{% else %}badge-pending{% endif %}" style="padding: 0.2rem 0.6rem; font-size: 0.75rem;">
+                                    {{ b.payment_status }}
+                                </span>
+                                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; line-height: 1.3;">
+                                    Method: {{ b.payment_method }}
+                                    {% if b.payment_method == 'UPI' and b.utr_id %}
+                                        <br><strong style="color: var(--secondary);">UTR: {{ b.utr_id }}</strong>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if b.status == 'Confirmed' %}
+                                    <a href="{% url 'reject_booking' b.id %}" class="btn btn-danger" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">
+                                        Reject
+                                    </a>
+                                {% else %}
+                                    <div style="font-size: 0.8rem; color: var(--error); max-width: 150px; white-space: normal; line-height: 1.2;">
+                                        <strong>Reason:</strong> {{ b.rejection_reason }}
+                                    </div>
+                                    <div style="margin-top: 0.5rem;">
+                                        <a href="{% url 'delete_booking' b.id %}" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background: rgba(255,255,255,0.1);" onclick="return confirm('Are you sure you want to completely delete this booking?');">
+                                            Delete Record
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
+            <span style="font-size: 3rem;">📋</span>
+            <p style="margin-top: 1rem;">No bookings have been made yet in the system.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block title %}Shopping Cart - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node completed">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Vehicles</div>
+    </div>
+    <div class="step-node active">
+        <div class="step-circle">2</div>
+        <div class="step-label">Shopping Cart</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">3</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">4</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card" style="max-width: 850px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1.5rem;">
+        <div>
+            <h2 class="card-title" style="margin-bottom: 0.25rem;">Your Rental Cart</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Review selected vehicles and rental periods before checking out.</p>
+        </div>
+        <a href="{% url 'select_type' %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.6rem 1.2rem;">🪄 Add More Vehicles</a>
+    </div>
+
+    {% if cart_items %}
+        <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2.5rem;">
+            {% for item in cart_items %}
+                <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 1.5rem; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; transition: all 0.3s ease;" class="cart-item-row">
+                    
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex: 1; min-width: 250px;">
+                        <!-- Icon representation -->
+                        <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--secondary);">
+                            {% if item.vehicle.vehicle_type == 'car' %}🚗{% else %}🏍️{% endif %}
+                        </div>
+                        
+                        <div>
+                            <h3 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem;">
+                                {{ item.vehicle.name }}
+                                <span style="font-size: 0.85rem; color: var(--secondary); background: rgba(0,242,254,0.08); padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid rgba(0,242,254,0.12); margin-left: 0.5rem; font-weight: normal;">
+                                    Vehicle Count: {{ item.quantity }}
+                                </span>
+                            </h3>
+                            <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4;">
+                                🗓️ <strong>Dates:</strong> {{ item.start_date }} to {{ item.end_date }} ({{ item.num_days }} Day{% if item.num_days > 1 %}s{% endif %})
+                                <br>
+                                🕒 <strong>Times:</strong> {{ item.start_time }} &rarr; {{ item.end_time }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 2rem;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Subtotal</div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: var(--secondary); margin-top: 0.2rem;">₹{{ item.base_amount }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">₹{{ item.vehicle.price_per_day }}/day x {{ item.quantity }} x {{ item.num_days }}</div>
+                        </div>
+                        
+                        <a href="{% url 'remove_from_cart' item.id %}" class="btn btn-danger" style="padding: 0.6rem; border-radius: 12px; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px;" title="Remove vehicle from cart">
+                            🗑️
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <style>
+            .cart-item-row:hover {
+                background: rgba(255,255,255,0.04) !important;
+                border-color: rgba(0, 242, 254, 0.15) !important;
+                box-shadow: 0 10px 25px rgba(0, 242, 254, 0.05);
+            }
+        </style>
+
+        <!-- Cart Summary Footer -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 2rem; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem;">
+            <div>
+                <span style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Grand Subtotal:</span>
+                <div style="font-size: 2rem; font-weight: 800; color: var(--secondary); margin-top: 0.2rem;">₹{{ grand_total }}</div>
+            </div>
+            
+            <a href="{% url 'billing_receipt' %}" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2.5rem;" id="checkout-cart-btn">💳 Proceed to Checkout</a>
+        </div>
+
+    {% else %}
+        <div style="text-align: center; padding: 4rem 1rem;">
+            <span style="font-size: 4.5rem; display: block; margin-bottom: 1.5rem;">🛒</span>
+            <h3 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">Your Cart is Empty</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem;">Select sports cars or premium bikes to start booking.</p>
+            <a href="{% url 'select_type' %}" class="btn btn-primary" style="padding: 0.8rem 2.2rem;">Start Booking</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block title %}Select Model - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node completed">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Type</div>
+    </div>
+    <div class="step-node active">
+        <div class="step-circle">2</div>
+        <div class="step-label">Choose Model</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">3</div>
+        <div class="step-label">Rent Details</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">4</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">5</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1.5rem;">
+        <div>
+            <h2 class="card-title" style="margin-bottom: 0.25rem;">Select Your Vehicles ({{ vehicle_type|title }}s)</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Adjust quantities for vehicles and proceed. You can switch types to select both cars and bikes!</p>
+        </div>
+        <button type="submit" form="selection-form" name="action" value="clear_back" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.6rem 1.2rem;">&larr; Back to Types</button>
+    </div>
+    
+    <form method="POST" id="selection-form">
+        {% csrf_token %}
+        <div class="models-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
+            {% for vehicle in vehicles %}
+                <div class="glass-card model-card" id="card-{{ vehicle.id }}" style="padding: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div class="model-img-wrapper" style="position: relative; margin-bottom: 1rem; overflow: hidden; border-radius: 16px; background: rgba(255,255,255,0.02); height: 180px; display: flex; align-items: center; justify-content: center;">
+                            <img src="/static/images/{{ vehicle.image_path }}" alt="{{ vehicle.name }}" class="model-img" style="max-width: 90%; max-height: 90%; object-fit: contain; transition: transform 0.5s ease;">
+                            <div class="model-price" style="position: absolute; bottom: 10px; right: 10px; background: rgba(8, 7, 13, 0.85); padding: 0.4rem 0.8rem; border-radius: 10px; font-weight: 700; font-size: 1.1rem; color: var(--secondary); border: 1px solid rgba(255,255,255,0.08);">₹{{ vehicle.price_per_day }}<span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted);">/day</span></div>
+                        </div>
+                        
+                        <h3 style="font-family: var(--font-heading); font-size: 1.4rem; font-weight: 700; color: white; margin-bottom: 0.4rem;">{{ vehicle.name }}</h3>
+                        {% if vehicle.mileage %}
+                            <div style="margin-top: 0.3rem; margin-bottom: 0.6rem; font-size: 0.85rem; color: var(--secondary); font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem; background: rgba(0, 242, 254, 0.05); padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid rgba(0, 242, 254, 0.1);">
+                                ⛽ Mileage: {{ vehicle.mileage }} {% if vehicle.fuel_type %}({{ vehicle.fuel_type }}){% endif %}
+                            </div>
+                        {% endif %}
+                        <p class="model-desc" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1.5rem; min-height: 55px;">{{ vehicle.description }}</p>
+                    </div>
+                    
+                    <!-- Stepper block -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.6rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1.2rem;">
+                        <!-- Availability Badge -->
+                        <div class="availability-badge" style="font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.65rem; border-radius: 8px; margin-bottom: 0.3rem;
+                            {% if vehicle.availability == 1 %}
+                                background: rgba(255, 77, 77, 0.08); color: var(--error); border: 1px solid rgba(255, 77, 77, 0.2);
+                            {% elif vehicle.availability <= 3 %}
+                                background: rgba(255, 230, 0, 0.08); color: #ffe600; border: 1px solid rgba(255, 230, 0, 0.2);
+                            {% else %}
+                                background: rgba(0, 255, 135, 0.08); color: var(--success); border: 1px solid rgba(0, 255, 135, 0.2);
+                            {% endif %}">
+                            {% if vehicle.availability == 1 %}
+                                🔴 Only 1 left!
+                            {% else %}
+                                🟢 {{ vehicle.availability }} available
+                            {% endif %}
+                        </div>
+
+                        <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Select Vehicle Count</span>
+                        
+                        <input type="hidden" name="qty_{{ vehicle.id }}" id="qty-input-{{ vehicle.id }}" value="{{ vehicle.current_qty }}">
+                        
+                        <div class="qty-stepper" style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; padding: 3px;">
+                            <button type="button" class="stepper-btn btn-dec" data-id="{{ vehicle.id }}" style="background: rgba(255,255,255,0.08); color: white; border: none; width: 44px; height: 40px; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">-</button>
+                            <div class="stepper-val" id="qty-val-{{ vehicle.id }}" style="background: white; color: #14121e; width: 55px; height: 40px; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; justify-content: center; user-select: none;">{{ vehicle.current_qty }}</div>
+                            <button type="button" class="stepper-btn btn-inc" data-id="{{ vehicle.id }}" data-max="{{ vehicle.availability }}" style="background: rgba(255,255,255,0.08); color: white; border: none; width: 44px; height: 40px; font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease;">+</button>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div style="text-align: center; grid-column: 1 / -1; padding: 4rem 0; color: var(--text-muted);">
+                    <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🔍</span>
+                    <p>No models available in this category currently. Please check back later.</p>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Selection summary bar -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); padding: 1.5rem 2rem; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-top: 2.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" id="selection-summary-bar">
+            <div>
+                <span style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Selected Vehicles (This Session):</span>
+                <div style="font-size: 1.6rem; font-weight: 800; color: var(--secondary); margin-top: 0.2rem;"><span id="summary-total-qty">{{ total_selected }}</span> Vehicles</div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <!-- Switch Type Button -->
+                <button type="submit" name="action" value="switch_type" class="btn btn-secondary" style="font-size: 0.95rem; padding: 0.75rem 1.5rem;">
+                    {% if vehicle_type == 'car' %}🏍️ Add Bikes{% else %}🚗 Add Cars{% endif %}
+                </button>
+                
+                <!-- Proceed Button -->
+                <button type="submit" name="action" value="proceed" id="summary-proceed-btn" class="btn btn-primary" style="font-size: 1rem; padding: 0.75rem 2.2rem; transition: all 0.3s ease;">
+                    Proceed to Rent Details &rarr;
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    /* Styling hover transition for stepper buttons */
+    .stepper-btn:hover {
+        background: rgba(255,255,255,0.15) !important;
+    }
+    .stepper-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .model-card:hover .model-img {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const decBtns = document.querySelectorAll(".btn-dec");
+        const incBtns = document.querySelectorAll(".btn-inc");
+        const proceedBtn = document.getElementById("summary-proceed-btn");
+        
+        function showNotification(message, type = 'error') {
+            let container = document.getElementById('alert-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'alert-container';
+                container.className = 'alert-messages';
+                document.body.appendChild(container);
+            }
+            
+            const alertItem = document.createElement('div');
+            alertItem.className = `alert-item alert-${type}`;
+            
+            const alertText = document.createElement('span');
+            alertText.className = 'alert-text';
+            alertText.textContent = message;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'alert-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.onclick = function() {
+                alertItem.remove();
+            };
+            
+            alertItem.appendChild(alertText);
+            alertItem.appendChild(closeBtn);
+            container.appendChild(alertItem);
+            
+            // Auto slide-out close
+            setTimeout(() => {
+                alertItem.style.transition = 'opacity 0.5s ease';
+                alertItem.style.opacity = '0';
+                setTimeout(() => { alertItem.remove(); }, 500);
+            }, 3000);
+        }
+        
+        function updateCardHighlight(vehicleId, qty) {
+            const card = document.getElementById(`card-${vehicleId}`);
+            if (!card) return;
+            
+            if (qty > 0) {
+                card.style.borderColor = "var(--secondary)";
+                card.style.boxShadow = "0 0 20px var(--secondary-glow)";
+                card.style.background = "rgba(0, 242, 254, 0.02)";
+            } else {
+                card.style.borderColor = "var(--card-border)";
+                card.style.boxShadow = "none";
+                card.style.background = "var(--card-bg)";
+            }
+        }
+        
+        function updateSummary() {
+            let total = 0;
+            const hiddenInputs = document.querySelectorAll("input[id^='qty-input-']");
+            hiddenInputs.forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            
+            document.getElementById("summary-total-qty").textContent = total;
+            
+            if (total > 0) {
+                proceedBtn.disabled = false;
+                proceedBtn.style.opacity = "1";
+                proceedBtn.style.cursor = "pointer";
+                proceedBtn.style.pointerEvents = "auto";
+            } else {
+                proceedBtn.disabled = true;
+                proceedBtn.style.opacity = "0.4";
+                proceedBtn.style.cursor = "not-allowed";
+                proceedBtn.style.pointerEvents = "none";
+            }
+        }
+        
+        // Initialize highlights and summary on load
+        const hiddenInputs = document.querySelectorAll("input[id^='qty-input-']");
+        hiddenInputs.forEach(input => {
+            const vid = input.id.replace("qty-input-", "");
+            const qty = parseInt(input.value) || 0;
+            updateCardHighlight(vid, qty);
+        });
+        updateSummary();
+        
+        decBtns.forEach(btn => {
+            btn.addEventListener("click", function(e) {
+                e.preventDefault();
+                const vid = this.getAttribute("data-id");
+                const input = document.getElementById(`qty-input-${vid}`);
+                const display = document.getElementById(`qty-val-${vid}`);
+                let qty = parseInt(input.value) || 0;
+                
+                if (qty > 0) {
+                    qty--;
+                    input.value = qty;
+                    display.textContent = qty;
+                    updateCardHighlight(vid, qty);
+                    updateSummary();
+                }
+            });
+        });
+        
+        incBtns.forEach(btn => {
+            btn.addEventListener("click", function(e) {
+                e.preventDefault();
+                const vid = this.getAttribute("data-id");
+                const maxVal = parseInt(this.getAttribute("data-max")) || 5;
+                const input = document.getElementById(`qty-input-${vid}`);
+                const display = document.getElementById(`qty-val-${vid}`);
+                let qty = parseInt(input.value) || 0;
+                
+                if (qty < maxVal) {
+                    qty++;
+                    input.value = qty;
+                    display.textContent = qty;
+                    updateCardHighlight(vid, qty);
+                    updateSummary();
+                } else {
+                    showNotification(`Only ${maxVal} vehicles of this model are available.`, 'error');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

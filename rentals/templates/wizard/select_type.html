@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Select Vehicle Type - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node active">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Type</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">2</div>
+        <div class="step-label">Choose Model</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">3</div>
+        <div class="step-label">Rent Details</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">4</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">5</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card" style="text-align: center;">
+    <h2 class="card-title" style="margin-bottom: 2.5rem;">What are you looking to rent today?</h2>
+    
+    <div class="type-grid">
+        <!-- Car Selection -->
+        <form method="POST" id="form-car">
+            {% csrf_token %}
+            <input type="hidden" name="vehicle_type" value="car">
+            <div class="type-card" onclick="document.getElementById('form-car').submit()">
+                <div class="type-icon">🚗</div>
+                <div class="type-name">Premium Cars</div>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Rent premium, high-speed sports cars, electric sedans, and robust SUVs.</p>
+            </div>
+        </form>
+
+        <!-- Bike Selection -->
+        <form method="POST" id="form-bike">
+            {% csrf_token %}
+            <input type="hidden" name="vehicle_type" value="bike">
+            <div class="type-card" onclick="document.getElementById('form-bike').submit()">
+                <div class="type-icon">🏍️</div>
+                <div class="type-name">Premium Bikes</div>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Rent high-end sports racing motorbikes, heavy cruisers, and street bikes.</p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

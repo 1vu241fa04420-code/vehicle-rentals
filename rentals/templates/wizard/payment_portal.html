@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Verifying Payment - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="max-width: 550px; margin: 3rem auto; text-align: center;">
+    <div class="loading-wrapper">
+        <!-- Spinning loader elements -->
+        <div class="spinner-outer">
+            <div class="spinner-inner"></div>
+        </div>
+        
+        <div class="loader-status" id="status-message">Initializing Payment Gateway...</div>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; max-width: 400px; margin: 0 auto;" id="status-desc">
+            Please do not close this window or refresh this page. We are securely routing your checkout transaction.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const statusMessages = [
+        { text: "Securing connection...", desc: "Establishing an encrypted SSL/TLS tunnel with your banking server." },
+        { text: "Verifying payment details...", desc: "Checking account authentication token and credentials." },
+        { text: "Finalizing booking reservation...", desc: "Reserving your vehicle and generating digital receipts." },
+        { text: "Redirecting...", desc: "Transferring you back to Web Wizards Car Rentals." }
+    ];
+    
+    let currentIndex = 0;
+    
+    // Change text messages every 800ms
+    const interval = setInterval(function() {
+        if (currentIndex < statusMessages.length) {
+            document.getElementById('status-message').innerText = statusMessages[currentIndex].text;
+            document.getElementById('status-desc').innerText = statusMessages[currentIndex].desc;
+            currentIndex++;
+        } else {
+            clearInterval(interval);
+            // Redirect to payment success page
+            window.location.href = "{% url 'payment_success' %}";
+        }
+    }, 800);
+</script>
+{% endblock %}

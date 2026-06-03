@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+{% block title %}Rental Details - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node completed">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Type</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">2</div>
+        <div class="step-label">Choose Model</div>
+    </div>
+    <div class="step-node active">
+        <div class="step-circle">3</div>
+        <div class="step-label">Rent Details</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">4</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">5</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card" style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1.5rem;">
+        <div>
+            <h2 class="card-title" style="margin-bottom: 0.25rem;">Enter Rental Details</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+                {% if selected_items %}
+                    You are booking: <strong style="color: var(--secondary);">{{ selected_items|length }} vehicle{{ selected_items|pluralize }}</strong>
+                {% else %}
+                    You are booking: <strong style="color: var(--secondary);">{{ vehicle.name }}</strong> (₹{{ vehicle.price_per_day }}/day)
+                {% endif %}
+            </p>
+        </div>
+        <a href="{% url 'select_model' %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.6rem 1.2rem;">&larr; Back to Models</a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- SELECTED VEHICLE SUMMARY CARDS -->
+        {% if selected_items %}
+            <div style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2.5rem;">
+                {% for item in selected_items %}
+                    <div class="selected-vehicle-card" style="display: flex; gap: 2rem; align-items: center; padding: 1.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 20px; flex-wrap: wrap; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);">
+                        <div style="flex: 1; min-width: 150px; max-width: 250px; display: flex; align-items: center; justify-content: center;">
+                            <img src="/static/images/{{ item.vehicle.image_path }}" alt="{{ item.vehicle.name }}" style="width: 100%; max-height: 140px; object-fit: contain; border-radius: 12px;">
+                        </div>
+                        
+                        <div style="flex: 2; min-width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <span style="color: var(--secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Selected {{ item.vehicle.vehicle_type|title }} Details</span>
+                            <h3 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; margin: 0; color: white;">{{ item.vehicle.name }}</h3>
+                            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.4;">{{ item.vehicle.description }}</p>
+                            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap;">
+                                <div style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">₹{{ item.vehicle.price_per_day }}<span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">/day</span></div>
+                                <div style="background: rgba(0, 242, 254, 0.08); color: var(--secondary); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 8px; padding: 0.3rem 0.8rem; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                                    🔢 Vehicle Count: <span>{{ item.quantity }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Remove Button -->
+                        <div style="flex: 0 0 auto; min-width: 100px; display: flex; align-items: center; justify-content: center; margin-left: auto;">
+                            <a href="{% url 'remove_selected_vehicle' item.vehicle.id %}" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1.2rem; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                ❌ Remove
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <!-- Hidden quantity input for multi-item -->
+            <input type="hidden" name="quantity" id="id_quantity" value="1">
+        {% else %}
+            <div class="selected-vehicle-card" style="display: flex; gap: 2rem; align-items: center; padding: 1.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 20px; margin-bottom: 2.5rem; flex-wrap: wrap; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);">
+                <div style="flex: 1; min-width: 150px; max-width: 250px; display: flex; align-items: center; justify-content: center;">
+                    <img src="/static/images/{{ vehicle.image_path }}" alt="{{ vehicle.name }}" style="width: 100%; max-height: 140px; object-fit: contain; border-radius: 12px;">
+                </div>
+                
+                <div style="flex: 2; min-width: 200px; display: flex; flex-direction: column; gap: 0.4rem;">
+                    <span style="color: var(--secondary); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Selected Vehicle Details</span>
+                    <h3 style="font-family: var(--font-heading); font-size: 1.6rem; font-weight: 700; margin: 0; color: white;">{{ vehicle.name }}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.4;">{{ vehicle.description }}</p>
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap;">
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--secondary);">₹{{ vehicle.price_per_day }}<span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">/day</span></div>
+                        <div style="background: rgba(0, 242, 254, 0.08); color: var(--secondary); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 8px; padding: 0.3rem 0.8rem; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                            🔢 Vehicle Count: <span>{% if form.quantity.value %}{{ form.quantity.value }}{% else %}1{% endif %}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{ form.quantity }}
+        {% endif %}
+        
+        <!-- SECTION 1: DATES & TIMES -->
+        <h3 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 600; margin-bottom: 1.2rem; color: var(--secondary);">🗓️ Date & Time Selections</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem;" class="grid-2-col">
+            <div class="form-group {% if form.start_date.errors %}has-error{% endif %}">
+                <label class="form-label">Rental Start Date</label>
+                {{ form.start_date }}
+                {% if form.start_date.errors %}
+                    <ul class="error-list">{% for error in form.start_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group {% if form.start_time.errors %}has-error{% endif %}">
+                <label class="form-label">Start Time</label>
+                {{ form.start_time }}
+                {% if form.start_time.errors %}
+                    <ul class="error-list">{% for error in form.start_time.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem;" class="grid-2-col">
+            <div class="form-group {% if form.end_date.errors %}has-error{% endif %}">
+                <label class="form-label">Rental End Date</label>
+                {{ form.end_date }}
+                {% if form.end_date.errors %}
+                    <ul class="error-list">{% for error in form.end_date.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group {% if form.end_time.errors %}has-error{% endif %}">
+                <label class="form-label">End Time</label>
+                {{ form.end_time }}
+                {% if form.end_time.errors %}
+                    <ul class="error-list">{% for error in form.end_time.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <style>
+            @media (min-width: 600px) {
+                .grid-2-col {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                }
+            }
+        </style>
+
+        <!-- SECTION 2: CUSTOMER PROFILE & ID VERIFICATION -->
+        <h3 style="font-family: var(--font-heading); font-size: 1.2rem; font-weight: 600; margin-bottom: 1.2rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1.5rem; color: var(--secondary);">👤 Renter Profile Information</h3>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;" class="grid-2-col">
+            <div class="form-group {% if form.customer_name.errors %}has-error{% endif %}">
+                <label class="form-label">Full Name <span style="font-size: 0.75rem; color: var(--text-muted);">(10-30 characters)</span></label>
+                {{ form.customer_name }}
+                {% if form.customer_name.errors %}
+                    <ul class="error-list">{% for error in form.customer_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group {% if form.customer_age.errors %}has-error{% endif %}">
+                <label class="form-label">Age <span style="font-size: 0.75rem; color: var(--text-muted);">(must be 18+)</span></label>
+                {{ form.customer_age }}
+                {% if form.customer_age.errors %}
+                    <ul class="error-list">{% for error in form.customer_age.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;" class="grid-2-col">
+            <div class="form-group {% if form.customer_gender.errors %}has-error{% endif %}">
+                <label class="form-label">Gender</label>
+                {{ form.customer_gender }}
+                {% if form.customer_gender.errors %}
+                    <ul class="error-list">{% for error in form.customer_gender.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group {% if form.id_proof.errors %}has-error{% endif %}">
+                <label class="form-label">Upload ID Proof 1 <span style="font-size: 0.75rem; color: var(--text-muted);">(Aadhar, PAN, or DL)</span></label>
+                {{ form.id_proof }}
+                {% if form.id_proof.errors %}
+                    <ul class="error-list">{% for error in form.id_proof.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if total_vehicle_count >= 2 %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;" class="grid-2-col">
+            <div class="form-group">
+                <label class="form-label">Upload ID Proof 2</label>
+                {{ form.id_proof_2 }}
+            </div>
+            {% if total_vehicle_count >= 3 %}
+            <div class="form-group">
+                <label class="form-label">Upload ID Proof 3</label>
+                {{ form.id_proof_3 }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% if total_vehicle_count >= 4 %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;" class="grid-2-col">
+            <div class="form-group">
+                <label class="form-label">Upload ID Proof 4</label>
+                {{ form.id_proof_4 }}
+            </div>
+            {% if total_vehicle_count >= 5 %}
+            <div class="form-group">
+                <label class="form-label">Upload ID Proof 5</label>
+                {{ form.id_proof_5 }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 1.5rem;" class="grid-2-col">
+            <div class="form-group {% if form.customer_email.errors %}has-error{% endif %}">
+                <label class="form-label">Email ID <span style="font-size: 0.75rem; color: var(--text-muted);">(Optional)</span></label>
+                {{ form.customer_email }}
+                {% if form.customer_email.errors %}
+                    <ul class="error-list">{% for error in form.customer_email.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <div class="form-group {% if form.customer_phone.errors %}has-error{% endif %}">
+                <label class="form-label">Phone Number <span style="font-size: 0.75rem; color: var(--text-muted);">(Required)</span></label>
+                {{ form.customer_phone }}
+                {% if form.customer_phone.errors %}
+                    <ul class="error-list">{% for error in form.customer_phone.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group {% if form.customer_address.errors %}has-error{% endif %}" style="margin-bottom: 2rem;">
+            <label class="form-label">Residential Address <span style="font-size: 0.75rem; color: var(--text-muted);">(30-100 characters)</span></label>
+            {{ form.customer_address }}
+            {% if form.customer_address.errors %}
+                <ul class="error-list">{% for error in form.customer_address.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 1rem;" id="booking-submit-btn">Review Booking & Generate Receipt</button>
+    </form>
+</div>
+{% endblock %}

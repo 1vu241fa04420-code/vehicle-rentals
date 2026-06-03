@@ -1,0 +1,258 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Web Wizards Car Rentals - Premium Vehicle Rentals{% endblock %}</title>
+
+    <!-- Meta tags for basic SEO -->
+    <meta name="description"
+        content="Rent luxury sports cars and premium bikes online. Fast booking, transparent billing, and instant payments.">
+    <meta name="keywords" content="car rental, bike rental, premium cars, rent motorcycle, online vehicle rent">
+
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=2.0">
+
+    <!-- Favicon placeholder or icon -->
+    <link rel="icon" type="image/png"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+
+    <!-- Flatpickr CSS for explicit AM/PM time pickers -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Dark theme for Flatpickr to match our glassmorphism style -->
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    <!-- Background image is loaded via CSS -->
+
+    <!-- Alert Messages -->
+    {% if messages %}
+    <div class="alert-messages" id="alert-container">
+        {% for message in messages %}
+        <div class="alert-item {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            <span class="alert-text">{{ message }}</span>
+            <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        // Automatically clear alerts after 4 seconds
+        setTimeout(function () {
+            var container = document.getElementById('alert-container');
+            if (container) {
+                container.style.transition = 'opacity 0.5s ease';
+                container.style.opacity = '0';
+                setTimeout(function () {
+                    container.remove();
+                }, 500);
+            }
+        }, 4000);
+    </script>
+    {% endif %}
+
+    <div class="app-container">
+        <!-- Top Info Bar -->
+        <div class="top-info-bar">
+            <span class="shop-address">📍 Address: Pattabhipuram 3rd line,Guntur,Andhrapradesh ,pin code-522006, Shop
+                Name- Web Wizards Car Rentals besides DRM office, phone no: 7337060329</span>
+        </div>
+
+        <!-- Site Header -->
+        <header>
+            <a href="{% url 'home' %}" class="logo" style="text-decoration: none;">
+                Web Wizards Car Rentals
+            </a>
+
+            <nav>
+                {% if user.is_authenticated %}
+                <div class="nav-user" style="margin-right: 0.5rem;">
+                    Welcome, <span>{{ user.username }}</span>
+                </div>
+                <a href="{% url 'logout' %}" class="btn btn-danger" id="logout-btn">Logout</a>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary" id="login-btn">Login / Sign Up</a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Site Footer -->
+        <footer>
+            <p>&copy; <span class="glowing-footer-text">2026 Web Wizards Car Rentals. Crafted with ❤️ for Premium rentals.</span></p>
+        </footer>
+    </div>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Apply 12-hour AM/PM formatting for time fields
+            flatpickr("input[type=time]", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",      // Internal 24hr format for Django backend
+                altInput: true,         // Replaces the element with a user-friendly field
+                altFormat: "h:i K"      // Displays 12hr time with AM/PM inside the UI
+            });
+
+            // Apply clean UI formatting for date fields
+            flatpickr("input[type=date]", {
+                dateFormat: "Y-m-d",    // Internal format for Django backend
+                altInput: true,
+                altFormat: "F j, Y",    // e.g. "January 1, 2026"
+                minDate: "today"
+            });
+        });
+    </script>
+
+    {% if user.is_authenticated and not user.is_staff and not request.session.location_verified %}
+    <!-- CSRF Form for AJAX request -->
+    <form id="location-csrf-form" style="display: none;">
+        {% csrf_token %}
+    </form>
+
+    <!-- Location Verification Modal -->
+    <div id="location-modal" class="location-modal-overlay">
+        <div class="location-modal-content glass-card">
+            <div class="location-icon">📍</div>
+            <h2 class="card-title"
+                style="margin-bottom: 0.5rem; background: linear-gradient(135deg, #fff 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                Location Verification Required</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                To proceed with renting vehicles, we need to verify that you are currently located in Andhra Pradesh.
+            </p>
+            <div id="location-error" class="location-error-msg" style="display: none;"></div>
+            <button id="verify-location-btn" class="btn btn-primary btn-full" style="font-weight: 700;">Verify My
+                Location</button>
+            <div id="location-loading" class="location-loading-spinner" style="display: none;">
+                <div class="spinner-location"></div>
+                <span>Verifying your location coordinates...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('location-modal');
+            const verifyBtn = document.getElementById('verify-location-btn');
+            const errorMsg = document.getElementById('location-error');
+            const loading = document.getElementById('location-loading');
+
+            if (!modal) return;
+
+            verifyBtn.addEventListener('click', function () {
+                errorMsg.style.display = 'none';
+                verifyBtn.style.display = 'none';
+                loading.style.display = 'flex';
+
+                if (!navigator.geolocation) {
+                    showError("Geolocation is not supported by your browser.");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        // AP Bounding Box: Lat 12.0 to 19.5, Lon 76.0 to 85.0
+                        const inAPBox = (lat >= 12.0 && lat <= 19.5 && lon >= 76.0 && lon <= 85.0);
+
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                            .then(res => {
+                                if (!res.ok) throw new Error("API response error");
+                                return res.json();
+                            })
+                            .then(data => {
+                                const state = (data.address && (data.address.state || data.address.region || data.address.state_district)) || "";
+                                const stateLower = state.toLowerCase().replace(/\s+/g, '');
+
+                                if (stateLower.includes('andhrapradesh') || stateLower.includes('andhra')) {
+                                    submitVerification();
+                                } else {
+                                    if (inAPBox) {
+                                        submitVerification();
+                                    } else {
+                                        showError(`Access denied. Your location was detected as "${state || 'outside Andhra Pradesh'}". Rentals are only available within Andhra Pradesh.`);
+                                    }
+                                }
+                            })
+                            .catch(err => {
+                                console.error("Nominatim reverse geocoding failed, trying bounding box fallback", err);
+                                if (inAPBox) {
+                                    submitVerification();
+                                } else {
+                                    showError("Could not verify your location. Please make sure you are in Andhra Pradesh and try again.");
+                                }
+                            });
+                    },
+                    function (error) {
+                        console.error("Geolocation error: ", error);
+                        let msg = "Location access denied. Please enable location services in your browser settings to proceed with rentals.";
+                        if (error.code === error.POSITION_UNAVAILABLE) {
+                            msg = "Location information is unavailable. Please try again.";
+                        } else if (error.code === error.TIMEOUT) {
+                            msg = "Location request timed out. Please try again.";
+                        }
+                        showError(msg);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+
+            function showError(message) {
+                loading.style.display = 'none';
+                verifyBtn.style.display = 'inline-flex';
+                errorMsg.textContent = message;
+                errorMsg.style.display = 'block';
+            }
+
+            function submitVerification() {
+                const csrfToken = document.querySelector('#location-csrf-form [name=csrfmiddlewaretoken]').value;
+                fetch("{% url 'verify_location' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "X-CSRFToken": csrfToken
+                    },
+                    body: ""
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            modal.style.transition = 'opacity 0.5s ease';
+                            modal.style.opacity = '0';
+                            setTimeout(() => {
+                                modal.style.display = 'none';
+                                window.location.reload();
+                            }, 500);
+                        } else {
+                            showError("An error occurred while saving your verification status. Please try again.");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Backend verification save error:", err);
+                        showError("Could not connect to server. Please try again.");
+                    });
+            }
+        });
+    </script>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

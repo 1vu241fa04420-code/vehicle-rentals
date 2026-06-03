@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Cancel or Modify Booking{% endblock %}
+
+{% block content %}
+<div class="wizard-container">
+    <div class="glass-card" style="max-width: 600px; margin: 0 auto;">
+        <h2 class="card-title">Cancel or Modify Booking</h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Manage your booking for <strong>{{ booking.vehicle.name }}</strong>.</p>
+        
+        <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; margin-bottom: 2rem;">
+            <p><strong>Current Start:</strong> {{ booking.start_date }} at {{ booking.start_time }}</p>
+            <p><strong>Current End:</strong> {{ booking.end_date }} at {{ booking.end_time }}</p>
+            <p><strong>Current Total:</strong> ₹{{ booking.total_amount }}</p>
+        </div>
+
+        <form method="post" id="cancelForm">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label class="form-label" for="id_cancel_reason">What would you like to do?</label>
+                {{ form.reason }}
+                {% if form.reason.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.reason.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div id="date-fields" style="display: none; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px dashed rgba(255,255,255,0.1);">
+                <h4 style="margin-bottom: 1rem;">Select New Dates</h4>
+                <div class="form-group">
+                    <label class="form-label">New Start Date</label>
+                    {{ form.new_start_date }}
+                    {% if form.new_start_date.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.new_start_date.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New End Date</label>
+                    {{ form.new_end_date }}
+                    {% if form.new_end_date.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.new_end_date.errors.0 }}</div>{% endif %}
+                </div>
+                <p style="font-size: 0.85rem; color: var(--secondary);">Changing dates will recalculate your total rental cost.</p>
+            </div>
+
+            <div id="time-fields" style="display: none; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px dashed rgba(255,255,255,0.1);">
+                <h4 style="margin-bottom: 1rem;">Select New Times</h4>
+                <div class="form-group">
+                    <label class="form-label">New Start Time</label>
+                    {{ form.new_start_time }}
+                    {% if form.new_start_time.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.new_start_time.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">New End Time</label>
+                    {{ form.new_end_time }}
+                    {% if form.new_end_time.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.new_end_time.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+
+            <div id="custom-reason-field" style="display: none; margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Reason for Cancellation</label>
+                    {{ form.custom_reason }}
+                    {% if form.custom_reason.errors %}<div class="error-msg" style="color: var(--error); font-size: 0.85rem; margin-top: 0.3rem;">{{ form.custom_reason.errors.0 }}</div>{% endif %}
+                </div>
+                <div style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); padding: 0.8rem; border-radius: 8px; color: #ffcccc; font-size: 0.9rem; margin-top: 1rem;">
+                    ⚠️ Warning: This action will permanently cancel your booking.
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <a href="{% url 'home' %}" class="btn" style="background: rgba(255,255,255,0.1); color: white; flex: 1; text-align: center; text-decoration: none;">Back</a>
+                <button type="submit" class="btn btn-primary" id="submitBtn" style="flex: 2;">Confirm Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const reasonSelect = document.getElementById('id_cancel_reason');
+    const dateFields = document.getElementById('date-fields');
+    const timeFields = document.getElementById('time-fields');
+    const customReason = document.getElementById('custom-reason-field');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function toggleFields() {
+        if (!reasonSelect) return;
+        const val = reasonSelect.value;
+        dateFields.style.display = 'none';
+        timeFields.style.display = 'none';
+        customReason.style.display = 'none';
+        
+        if (val === 'Date selection wrong') {
+            dateFields.style.display = 'block';
+            submitBtn.textContent = "Update Dates";
+            submitBtn.style.background = "var(--primary)";
+        } else if (val === 'Time selection wrong') {
+            timeFields.style.display = 'block';
+            submitBtn.textContent = "Update Times";
+            submitBtn.style.background = "var(--primary)";
+        } else if (val === 'Other') {
+            customReason.style.display = 'block';
+            submitBtn.textContent = "Cancel Booking";
+            submitBtn.style.background = "var(--error)";
+        }
+    }
+
+    if (reasonSelect) {
+        reasonSelect.addEventListener('change', toggleFields);
+        // Initial check (in case of form validation errors re-rendering the page)
+        toggleFields();
+    }
+});
+</script>
+{% endblock %}

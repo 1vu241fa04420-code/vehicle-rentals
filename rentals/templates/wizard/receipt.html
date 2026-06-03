@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Invoice Receipt - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node completed">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Type</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">2</div>
+        <div class="step-label">Choose Model</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">3</div>
+        <div class="step-label">Rent Details</div>
+    </div>
+    <div class="step-node active">
+        <div class="step-circle">4</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node">
+        <div class="step-circle">5</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card" style="max-width: 700px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1.5rem;">
+        <span style="font-size: 3rem;">🧾</span>
+        <h2 class="card-title" style="margin-top: 1rem; margin-bottom: 0.25rem;">Booking Invoice</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Review your details and receipt amount before proceeding.</p>
+    </div>
+
+    <!-- Renter summary details -->
+    <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem;">
+        <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--secondary); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 1px;">Customer Details</h3>
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;" class="grid-2-col-info">
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">NAME</span>
+                <div style="font-weight: 600; margin-top: 0.2rem;">{{ cart_items.0.customer_name }}</div>
+            </div>
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">CONTACT INFO</span>
+                <div style="font-weight: 600; margin-top: 0.2rem; font-size: 0.9rem; line-height: 1.3;">
+                    📞 {{ cart_items.0.customer_phone }}
+                    {% if cart_items.0.customer_email %}
+                        <br>✉️ {{ cart_items.0.customer_email }}
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">AGE & GENDER</span>
+                <div style="font-weight: 600; margin-top: 0.2rem;">{{ cart_items.0.customer_age }} yrs ({{ cart_items.0.customer_gender }})</div>
+            </div>
+            <div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">VEHICLES BOOKED</span>
+                <div style="font-weight: 600; margin-top: 0.2rem; color: var(--secondary);">
+                    {% for item in cart_items %}
+                        {{ item.quantity }} x {{ item.vehicle.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.8rem;">
+            <span style="font-size: 0.8rem; color: var(--text-muted);">ADDRESS</span>
+            <div style="font-size: 0.95rem; margin-top: 0.2rem; line-height: 1.4;">{{ cart_items.0.customer_address }}</div>
+        </div>
+    </div>
+
+    <style>
+        @media (min-width: 500px) {
+            .grid-2-col-info {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+    </style>
+
+    <!-- Rental Breakdown Receipt -->
+    <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 1px;">Receipt Breakdown</h3>
+    <table class="receipt-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Cost / Rate</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cart_items %}
+            <tr>
+                <td>
+                    <strong style="color: var(--text-main);">{{ item.vehicle.name }}</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Category: {{ item.vehicle.get_vehicle_type_display }}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Dates: {{ item.start_date|date:"d M" }} - {{ item.end_date|date:"d M Y" }} ({{ item.num_days }} Day{% if item.num_days > 1 %}s{% endif %})</div>
+                </td>
+                <td style="text-align: right;">
+                    ₹{{ item.vehicle.price_per_day }} / day
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Vehicle Count: {{ item.quantity }}</div>
+                </td>
+                <td style="text-align: right; font-weight: 600; color: var(--text-main);">₹{{ item.base_amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="receipt-total-row">
+                <td>Total Invoice Amount</td>
+                <td style="text-align: right;">-</td>
+                <td style="text-align: right; color: var(--secondary);">₹{{ grand_total }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem; flex-wrap: wrap;">
+        <a href="{% url 'cart' %}" class="btn btn-secondary" style="flex: 1; text-align: center;">Back to Cart</a>
+        <a href="{% url 'payment_processing' %}" class="btn btn-primary" style="flex: 2; text-align: center;" id="confirm-booking-btn">Confirm & Book Vehicles</a>
+    </div>
+</div>
+{% endblock %}

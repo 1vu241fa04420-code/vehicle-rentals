@@ -1,0 +1,608 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Payment Selection - Web Wizards Car Rentals{% endblock %}
+
+{% block content %}
+<!-- Wizard Progress Header -->
+<div class="progress-steps">
+    <div class="step-node completed">
+        <div class="step-circle">1</div>
+        <div class="step-label">Select Type</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">2</div>
+        <div class="step-label">Choose Model</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">3</div>
+        <div class="step-label">Rent Details</div>
+    </div>
+    <div class="step-node completed">
+        <div class="step-circle">4</div>
+        <div class="step-label">Receipt</div>
+    </div>
+    <div class="step-node active">
+        <div class="step-circle">5</div>
+        <div class="step-label">Payment</div>
+    </div>
+</div>
+
+<div class="glass-card" style="max-width: 750px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1.5rem;">
+        <div>
+            <h2 class="card-title" style="margin-bottom: 0.25rem;">Select Payment Method</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Choose how you want to secure your vehicle rental booking.</p>
+        </div>
+        <a href="{% url 'billing_receipt' %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.6rem 1.2rem;">&larr; Back to Invoice</a>
+    </div>
+
+    {% if total_vehicles >= 2 %}
+    <div class="warning-banner" style="background: rgba(255, 179, 0, 0.08); border: 1px solid rgba(255, 179, 0, 0.25); padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; display: flex; align-items: flex-start; gap: 1rem; box-shadow: 0 4px 15px rgba(255, 179, 0, 0.05); text-align: left;">
+        <span style="font-size: 1.5rem; line-height: 1;">⚠️</span>
+        <div>
+            <strong style="color: #ffb300; font-size: 1rem; display: block; margin-bottom: 0.25rem;">Multi-Vehicle Booking Prepayment Requirement</strong>
+            <span style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.4; display: block;">
+                You are booking <strong>{{ total_vehicles }}</strong> vehicles. To secure this booking, a minimum prepayment of <strong>25%</strong> of the rent amount is required. You can pay 100% now or choose the 25% option below.
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 500;">Invoice Base Amount:</span>
+        <span style="font-size: 1.4rem; font-weight: 800; color: var(--secondary);" id="display-amount">₹{{ grand_total }}</span>
+    </div>
+
+    <form method="POST" id="payment-form">
+        {% csrf_token %}
+        
+        {% if form.errors %}
+            <div class="error-banner" style="background: rgba(255, 77, 77, 0.08); border: 1px solid rgba(255, 77, 77, 0.25); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; color: var(--error); font-size: 0.9rem; text-align: left;">
+                <strong style="display: block; margin-bottom: 0.4rem;">Please correct the errors below:</strong>
+                <ul style="margin: 0; padding-left: 1.2rem;">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if total_vehicles >= 2 %}
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; text-align: left;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; color: var(--secondary); margin-bottom: 1.2rem; text-transform: uppercase; letter-spacing: 1px;">Choose Payment Amount</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for radio in form.payment_amount_choice %}
+                <label class="payment-amount-label" style="display: flex; align-items: center; gap: 0.8rem; padding: 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 10px; cursor: pointer; transition: all 0.2s ease;">
+                    <span style="display: inline-flex; align-items: center;">{{ radio.tag }}</span>
+                    <div>
+                        <strong style="color: var(--text-main); font-size: 1rem; display: block; margin-bottom: 0.15rem;">{{ radio.choice_label }}</strong>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">
+                            {% if radio.data.value == '100' %}
+                                Pay the full amount of <strong>₹{{ grand_total }}</strong> online now.
+                            {% else %}
+                                Pay 25% (<strong style="color: var(--secondary);"><span id="prepay-calc-js"></span></strong>) now and the remaining 75% on visit.
+                            {% endif %}
+                        </span>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <style>
+            .payment-amount-label:hover {
+                background: rgba(255, 255, 255, 0.04) !important;
+                border-color: var(--secondary) !important;
+            }
+            .payment-amount-label input[type="radio"]:checked + div {
+                color: var(--secondary);
+            }
+            .payment-amount-label input[type="radio"] {
+                accent-color: var(--secondary);
+                width: 18px;
+                height: 18px;
+            }
+        </style>
+        {% endif %}
+        
+        <!-- Payment Options Grid -->
+        <div class="payment-grid">
+            <!-- UPI -->
+            <label class="payment-option-label">
+                <input type="radio" name="payment_method" value="UPI" class="payment-radio" {% if form.payment_method.value == 'UPI' or not form.payment_method.value %}checked{% endif %} onchange="togglePaymentPanels('UPI')">
+                <div class="payment-option-card">
+                    <div class="payment-option-circle"></div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.05rem;">UPI Transfer</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">GPay, PhonePe, Paytm</div>
+                    </div>
+                </div>
+            </label>
+
+            <!-- Card -->
+            <label class="payment-option-label">
+                <input type="radio" name="payment_method" value="Card" class="payment-radio" {% if form.payment_method.value == 'Card' %}checked{% endif %} onchange="togglePaymentPanels('Card')">
+                <div class="payment-option-card">
+                    <div class="payment-option-circle"></div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.05rem;">Credit / Debit Card</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Visa, Mastercard, RuPay</div>
+                    </div>
+                </div>
+            </label>
+
+            <!-- Netbanking -->
+            <label class="payment-option-label">
+                <input type="radio" name="payment_method" value="Netbanking" class="payment-radio" {% if form.payment_method.value == 'Netbanking' %}checked{% endif %} onchange="togglePaymentPanels('Netbanking')">
+                <div class="payment-option-card">
+                    <div class="payment-option-circle"></div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.05rem;">Net Banking</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Direct secure login with major banks</div>
+                    </div>
+                </div>
+            </label>
+
+            <!-- Pay on Visit -->
+            <label class="payment-option-label" {% if total_vehicles >= 2 %}style="opacity: 0.4; cursor: not-allowed; pointer-events: none;" title="Pay on Visit is not available for 2 or more vehicles."{% endif %}>
+                <input type="radio" name="payment_method" value="Pay on Visit" class="payment-radio" {% if form.payment_method.value == 'Pay on Visit' %}checked{% endif %} {% if total_vehicles >= 2 %}disabled{% endif %} onchange="togglePaymentPanels('Pay on Visit')">
+                <div class="payment-option-card">
+                    <div class="payment-option-circle"></div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 1.05rem;">Pay on Visit</div>
+                        <div style="font-size: 0.8rem; color: {% if total_vehicles >= 2 %}var(--error){% else %}var(--accent){% endif %}; margin-top: 0.2rem;">
+                            {% if total_vehicles >= 2 %}
+                                Unavailable for 2+ vehicles
+                            {% else %}
+                                Requires extra fee (+₹50)
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+
+        <style>
+            /* Custom Styles for UPI QR Interface */
+            .qr-card {
+                background: rgba(20, 18, 30, 0.7);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 20px;
+                padding: 1.5rem;
+                max-width: 380px;
+                margin: 0 auto 1.5rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(10px);
+                transition: all 0.3s ease;
+            }
+            
+            .qr-card:hover {
+                border-color: var(--secondary);
+                box-shadow: 0 15px 40px rgba(0, 242, 254, 0.1);
+            }
+
+            .qr-image-wrapper {
+                position: relative;
+                margin: 0 auto 1.2rem;
+                width: 250px;
+                height: auto;
+                background: #111;
+                border-radius: 12px;
+                padding: 8px;
+                border: 1px solid rgba(255,255,255,0.06);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            .qr-image-wrapper img {
+                width: 100%;
+                height: auto;
+                border-radius: 8px;
+                display: block;
+            }
+
+            .upi-badge-container {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                padding: 0.7rem 1rem;
+                border-radius: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.2rem;
+            }
+
+            .upi-id-value {
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: var(--text-main);
+                font-family: monospace;
+            }
+
+            .upi-actions-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.8rem;
+            }
+
+            .qr-action-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.4rem;
+                padding: 0.65rem;
+                font-size: 0.85rem;
+                font-weight: 600;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--text-main);
+                text-decoration: none;
+            }
+
+            .qr-action-btn:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border-color: var(--secondary);
+                color: var(--secondary);
+            }
+            
+            .copy-btn {
+                background: var(--secondary);
+                color: #000;
+                border: none;
+                padding: 0.35rem 0.7rem;
+                font-size: 0.75rem;
+                font-weight: 700;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .copy-btn:hover {
+                background: #00d6e4;
+                transform: scale(1.05);
+            }
+
+            /* Toast styling */
+            .custom-toast {
+                position: fixed;
+                bottom: 2.5rem;
+                left: 50%;
+                transform: translateX(-50%) translateY(100px);
+                background: rgba(138, 43, 226, 0.95);
+                color: #fff;
+                padding: 0.75rem 1.5rem;
+                border-radius: 50px;
+                font-size: 0.85rem;
+                font-weight: 600;
+                box-shadow: 0 10px 25px rgba(138, 43, 226, 0.35);
+                z-index: 10000;
+                pointer-events: none;
+                opacity: 0;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }
+            
+            .custom-toast.show {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        </style>
+
+        <!-- DETAILS FOR UPI -->
+        <div class="payment-details-panel {% if form.payment_method.value == 'UPI' or not form.payment_method.value %}active{% endif %}" id="panel-UPI" style="text-align: center;">
+            <h3 style="font-family: var(--font-heading); font-size: 1.2rem; margin-bottom: 1.5rem; color: var(--secondary);">Scan to Pay via UPI</h3>
+            
+            <!-- Hidden inputs to satisfy the form validator -->
+            <input type="hidden" id="id_upi_id" name="upi_id" value="7337060329@ibl">
+            
+            <!-- QR Card -->
+            <div class="qr-card">
+                <!-- Bank Info Header -->
+                <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 1.2rem; gap: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.8rem;">
+                    <div style="width: 32px; height: 32px; background: #004c8f; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                        H
+                    </div>
+                    <div style="text-align: left;">
+                        <div style="font-weight: 600; font-size: 0.95rem; color: #fff; line-height: 1.2;">HDFC Bank</div>
+                        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.5);">Account: ******3020</div>
+                    </div>
+                </div>
+
+                <!-- QR Code Wrapper -->
+                <div class="qr-image-wrapper">
+                    <img id="qr-code-image" src="{% static 'images/upi_qr.jpg' %}" alt="UPI QR Code">
+                </div>
+
+                <!-- UPI ID Footer -->
+                <div class="upi-badge-container">
+                    <span class="upi-id-value" id="upi-id-text">7337060329@ibl</span>
+                    <button type="button" onclick="copyUpiId()" class="copy-btn">
+                        Copy
+                    </button>
+                </div>
+
+                <!-- Action Buttons: Download & Share -->
+                <div class="upi-actions-grid">
+                    <!-- Download -->
+                    <a href="{% static 'images/upi_qr.jpg' %}" download="Web_Wizards_Rentals_QR.jpg" class="qr-action-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                        Download
+                    </a>
+                    
+                    <!-- Share -->
+                    <button type="button" onclick="shareQR()" class="qr-action-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                        Share
+                    </button>
+                </div>
+            </div>
+
+            <!-- UTR ID Input -->
+            <div class="form-group {% if form.utr_id.errors %}has-error{% endif %}" style="text-align: left; margin: 1.5rem auto 1rem; max-width: 380px;">
+                <label class="form-label" style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem; display: block;">
+                    Enter 12-Digit UTR ID <span style="color: var(--accent);">*</span>
+                </label>
+                <input type="text" id="id_utr_id_input" name="utr_id" class="form-input" 
+                       placeholder="e.g. 123456789012" maxlength="12" style="font-family: monospace; letter-spacing: 1.5px; font-size: 1.1rem; text-align: center; text-transform: uppercase;"
+                       oninput="validateUtrId()" value="{{ form.utr_id.value|default:'' }}">
+                
+                <span id="utr-error" style="font-size: 0.78rem; color: var(--error); display: none; margin-top: 0.4rem; font-weight: 500;"></span>
+                {% if form.utr_id.errors %}
+                    <ul class="error-list">{% for error in form.utr_id.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+            
+            <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; max-width: 400px; margin: 1.5rem auto 0;">
+                Scan the QR code above using any UPI App (GPay, PhonePe, Paytm) to make the payment, enter the 12-digit UTR ID from the transaction statement, and click Continue below.
+            </p>
+        </div>
+
+        <!-- DETAILS FOR NETBANKING -->
+        <div class="payment-details-panel {% if form.payment_method.value == 'Netbanking' %}active{% endif %}" id="panel-Netbanking">
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 1.2rem; color: var(--secondary);">Select Netbanking Provider</h3>
+            <div class="form-group {% if form.bank_name.errors %}has-error{% endif %}">
+                <label class="form-label">Select Bank</label>
+                {{ form.bank_name }}
+                {% if form.bank_name.errors %}
+                    <ul class="error-list">{% for error in form.bank_name.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- DETAILS FOR CARD -->
+        <div class="payment-details-panel {% if form.payment_method.value == 'Card' %}active{% endif %}" id="panel-Card">
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 1.2rem; color: var(--secondary);">Enter Card Credentials</h3>
+            
+            <div class="form-group {% if form.card_number.errors %}has-error{% endif %}">
+                <label class="form-label">Card Number <span style="font-size: 0.75rem; color: var(--text-muted);">(Min 12 digits)</span></label>
+                {{ form.card_number }}
+                {% if form.card_number.errors %}
+                    <ul class="error-list">{% for error in form.card_number.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                {% endif %}
+            </div>
+
+            <div class="card-row-split">
+                <div class="form-group {% if form.card_expiry.errors %}has-error{% endif %}">
+                    <label class="form-label">Expiry Date</label>
+                    {{ form.card_expiry }}
+                    {% if form.card_expiry.errors %}
+                        <ul class="error-list">{% for error in form.card_expiry.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group {% if form.card_cvv.errors %}has-error{% endif %}">
+                    <label class="form-label">CVV <span style="font-size: 0.75rem; color: var(--text-muted);">(Min 3 digits)</span></label>
+                    {{ form.card_cvv }}
+                    {% if form.card_cvv.errors %}
+                        <ul class="error-list">{% for error in form.card_cvv.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- DETAILS FOR PAY ON VISIT -->
+        <div class="payment-details-panel {% if form.payment_method.value == 'Pay on Visit' %}active{% endif %}" id="panel-Pay-on-Visit">
+            <h3 style="font-family: var(--font-heading); font-size: 1.1rem; margin-bottom: 0.8rem; color: var(--accent);">Pay on Visit Terms</h3>
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem;">
+                By choosing Pay on Visit, a booking surcharge of <strong style="color: var(--text-main);">₹50</strong> will be added to your invoice base amount. You will pay the revised total of <strong style="color: var(--accent);" id="visit-total-display">₹{{ grand_total|add:50 }}</strong> when you visit our outlet to pick up the vehicle.
+            </p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; border-left: 2px solid var(--accent); padding-left: 1rem;">
+                * Valid government ID verification will be completed again on visit.
+            </p>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 2rem;" id="payment-submit-btn">Continue & Process Booking</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const baseAmount = {{ grand_total }};
+    
+    function updateDisplayAmount() {
+        const checkedRadio = document.querySelector('.payment-radio:checked');
+        const amountDisplay = document.getElementById('display-amount');
+        if (!checkedRadio || !amountDisplay) return;
+        
+        const method = checkedRadio.value;
+        let amount = baseAmount;
+        
+        if (method === 'Pay on Visit') {
+            amount = baseAmount + 50;
+        } else {
+            const choiceRadio = document.querySelector('.payment-choice-radio:checked');
+            if (choiceRadio && choiceRadio.value === '25') {
+                amount = baseAmount * 0.25;
+            }
+        }
+        amountDisplay.innerText = '₹' + amount.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function togglePaymentPanels(method) {
+        // Hide all detail panels
+        document.querySelectorAll('.payment-details-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        
+        // Show selected panel
+        // Map space characters in 'Pay on Visit' to dashes in DOM selector
+        const panelId = 'panel-' + method.replace(/\s+/g, '-');
+        const activePanel = document.getElementById(panelId);
+        if (activePanel) {
+            activePanel.classList.add('active');
+        }
+        
+        updateDisplayAmount();
+
+        // Validate submit button state on panel toggle
+        validateUtrId();
+    }
+    
+    // Run checks on load to adjust display total and button state
+    window.addEventListener('load', function() {
+        // Compute 25% preview text for the prepay selection
+        const prepaySpan = document.getElementById('prepay-calc-js');
+        if (prepaySpan) {
+            prepaySpan.innerText = '₹' + (baseAmount * 0.25).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        
+        const checkedRadio = document.querySelector('.payment-radio:checked');
+        if (checkedRadio) {
+            togglePaymentPanels(checkedRadio.value);
+        }
+        
+        // Listen for choice changes if multi-vehicle
+        document.querySelectorAll('.payment-choice-radio').forEach(radio => {
+            radio.addEventListener('change', updateDisplayAmount);
+        });
+        
+        validateUtrId();
+    });
+
+    // Validate 12-digit UTR ID only for UPI method
+    function validateUtrId() {
+        const checkedRadio = document.querySelector('.payment-radio:checked');
+        const submitBtn = document.getElementById('payment-submit-btn');
+        
+        if (checkedRadio && checkedRadio.value === 'UPI') {
+            const utrInput = document.getElementById('id_utr_id_input');
+            const utrError = document.getElementById('utr-error');
+            let val = utrInput.value.trim();
+            
+            // Retain only digits
+            val = val.replace(/\D/g, '');
+            utrInput.value = val;
+            
+            if (val.length === 12) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                utrError.style.display = 'none';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+                if (val.length > 0) {
+                    utrError.innerText = `UTR ID must be exactly 12 digits (currently ${val.length}/12).`;
+                    utrError.style.display = 'block';
+                } else {
+                    utrError.innerText = "Please enter the 12-digit UTR ID to continue.";
+                    utrError.style.display = 'block';
+                }
+            }
+        } else {
+            // For other payment methods, keep continue button active
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+            
+            // Hide UPI error if visible
+            const utrError = document.getElementById('utr-error');
+            if (utrError) {
+                utrError.style.display = 'none';
+            }
+        }
+    }
+
+    // Copy UPI ID function
+    function copyUpiId() {
+        const upiId = "7337060329@ibl";
+        navigator.clipboard.writeText(upiId).then(() => {
+            showToast("UPI ID copied to clipboard!");
+        }).catch(err => {
+            console.error("Failed to copy UPI ID: ", err);
+        });
+    }
+
+    // Share QR Code function
+    async function shareQR() {
+        const upiId = "7337060329@ibl";
+        const shareText = `Scan the QR code to make payment to Web Wizards Car Rentals. UPI ID: ${upiId}`;
+        const imageUrl = "{% static 'images/upi_qr.jpg' %}";
+        
+        if (navigator.share) {
+            try {
+                // Fetch the image and convert it to a file for sharing
+                const response = await fetch(imageUrl);
+                const blob = await response.blob();
+                const file = new File([blob], 'upi_qr.jpg', { type: 'image/jpeg' });
+                
+                await navigator.share({
+                    title: 'Web Wizards UPI Payment QR',
+                    text: shareText,
+                    files: [file]
+                });
+                return;
+            } catch (err) {
+                console.log("File sharing failed, trying text share:", err);
+                try {
+                    await navigator.share({
+                        title: 'Web Wizards UPI Payment QR',
+                        text: shareText,
+                        url: window.location.origin + imageUrl
+                    });
+                    return;
+                } catch (e) {
+                    console.log("Text sharing failed:", e);
+                }
+            }
+        }
+        
+        // Fallback: Copy share message to clipboard
+        navigator.clipboard.writeText(`${shareText}\n${window.location.origin}${imageUrl}`).then(() => {
+            showToast("Share details copied to clipboard!");
+        }).catch(err => {
+            console.error("Failed to copy share link: ", err);
+        });
+    }
+
+    // Toast Notification helper
+    function showToast(message) {
+        let toast = document.querySelector('.custom-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerText = message;
+        
+        // Force reflow
+        toast.offsetHeight;
+        
+        toast.classList.add('show');
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+</script>
+{% endblock %}

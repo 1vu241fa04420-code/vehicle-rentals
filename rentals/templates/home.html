@@ -1,0 +1,169 @@
+
+
+
+
+
+{% extends 'base.html' %}
+{% block title %}Web Wizards Car Rentals - Dashboard{% endblock %}
+
+{% block content %}
+<!-- Dashboard Welcome Header -->
+<div class="welcome-banner">
+    <div class="welcome-title">
+        <h1>Welcome, {{ user.username }}!</h1>
+        <p>Manage your luxury vehicle rentals and start new bookings.</p>
+    </div>
+    <a href="{% url 'select_type' %}" class="btn btn-primary" id="start-booking-btn">Rent a Vehicle</a>
+</div>
+
+<div class="dashboard-bookings-list" style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 900px; margin: 0 auto;">
+    {% if request.session.last_deleted_booking_ids %}
+    <div class="glass-card" style="margin-bottom: 0.5rem; background: rgba(0, 242, 254, 0.04); border: 1px solid rgba(0, 242, 254, 0.2); padding: 1rem 1.5rem; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; flex-wrap: wrap; box-shadow: 0 4px 15px rgba(0, 242, 254, 0.05); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 0.8rem;">
+            <span style="font-size: 1.4rem;">🔄</span>
+            <span style="font-size: 0.95rem; color: var(--text-main);">
+                Booking(s) removed from your dashboard.
+            </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="{% url 'undo_delete_booking' %}" class="btn btn-primary" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; font-weight: 700; background: var(--secondary); border-color: var(--secondary); color: #000; text-decoration: none;">
+                ↩️ Undo Deletion
+            </a>
+            <a href="{% url 'dismiss_delete_booking' %}" style="text-decoration: none; color: var(--text-muted); font-size: 1.5rem; line-height: 1; padding: 0.2rem; display: inline-block; cursor: pointer;" title="Dismiss">&times;</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if bookings %}
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 0.8rem; margin-bottom: 0.5rem;">
+            <h2 style="color: rgb(239, 226, 226); font-family: var(--font-heading); margin: 0;">Your Bookings</h2>
+            <form action="{% url 'delete_all_bookings' %}" method="POST" style="margin: 0;" onsubmit="return confirm('Only bookings will be cleared from dashboard, it will not be canceled. Are you willing for it?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1.2rem; font-size: 0.85rem; font-weight: 600; background: var(--error); border-color: var(--error); box-shadow: 0 4px 15px rgba(255, 77, 77, 0.25); color: #000;">
+                    🗑️ Delete All Bookings
+                </button>
+            </form>
+        </div>
+        {% for b in bookings %}
+        <div class="glass-card recent-booking-card">
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 style="font-family: var(--font-heading); font-size: 1.4rem;">
+                        {{ b.vehicle.name }}
+                        <span style="font-size: 1rem; color: var(--secondary); background: rgba(0, 242, 254, 0.08); padding: 0.2rem 0.6rem; border-radius: 8px; margin-left: 0.5rem; border: 1px solid rgba(0, 242, 254, 0.15); font-weight: normal; vertical-align: middle;">
+                            Vehicle Count: {{ b.quantity }}
+                        </span>
+                    </h3>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <span class="recent-badge {% if b.status == 'Confirmed' %}badge-completed{% elif b.status == 'Cancelled' %}badge-cancelled{% else %}badge-rejected{% endif %}">
+                            Status: {{ b.status }}
+                        </span>
+                        <span class="recent-badge {% if b.payment_status == 'Completed' %}badge-completed{% else %}badge-pending{% endif %}">
+                            Payment: {{ b.payment_status }}
+                        </span>
+                    </div>
+                </div>
+
+                {% if b.status == 'Confirmed' %}
+                <div style="margin-bottom: 0.5rem;">
+                    <a href="{% url 'cancel_modify_booking' b.id %}" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.5rem;">
+                        <span>✏️</span> Cancel / Modify Booking
+                    </a>
+                </div>
+                {% endif %}
+
+                {% if b.status == 'Rejected' or b.status == 'Cancelled' %}
+                <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1rem 1.2rem; border-radius: 12px; font-size: 0.95rem; color: var(--text-muted); line-height: 1.4;">
+                    <strong>⚠️ Booking {{ b.status }}:</strong> {{ b.rejection_reason }}
+                    {% if b.payment_status == 'Completed' %}
+                    <br><span style="color: var(--secondary); font-size: 0.85rem; display: inline-block; margin-top: 0.5rem;">ℹ️ Your payment will be transferred back to your {{ b.payment_method }} account.</span>
+                    {% endif %}
+                </div>
+                <div style="margin-top: 0.8rem;">
+                    <a href="{% url 'delete_booking' b.id %}" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem;" onclick="return confirm('Only bookings will be cleared from dashboard, it will not be canceled. Are you willing for it?');">
+                        <span>🗑️</span> Delete from Dashboard
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- Display ID proofs if uploaded -->
+                {% if b.id_proof %}
+                <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.05);">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <span style="font-size: 1.2rem;">📄</span>
+                        <span style="font-size: 0.9rem; color: var(--text-muted);">ID Proofs Uploaded</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        <a href="{{ b.id_proof.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Proof 1</a>
+                        {% if b.id_proof_2 %}<a href="{{ b.id_proof_2.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Proof 2</a>{% endif %}
+                        {% if b.id_proof_3 %}<a href="{{ b.id_proof_3.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Proof 3</a>{% endif %}
+                        {% if b.id_proof_4 %}<a href="{{ b.id_proof_4.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Proof 4</a>{% endif %}
+                        {% if b.id_proof_5 %}<a href="{{ b.id_proof_5.url }}" target="_blank" class="btn btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Proof 5</a>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="recent-details-grid">
+                    <div>
+                        <div class="recent-label">Renter Name</div>
+                        <div class="recent-val">{{ b.customer_name }}</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Age / Gender</div>
+                        <div class="recent-val">{{ b.customer_age }} ({{ b.customer_gender }})</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Phone Number</div>
+                        <div class="recent-val">{{ b.customer_phone }}</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Email ID</div>
+                        <div class="recent-val">{% if b.customer_email %}{{ b.customer_email }}{% else %}<span style="color: var(--text-muted); font-style: italic;">Not provided</span>{% endif %}</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Rental Duration</div>
+                        <div class="recent-val">{{ b.num_days }} Day{% if b.num_days > 1 %}s{% endif %}</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Amount Paid</div>
+                        <div class="recent-val" style="color: var(--secondary);">
+                            ₹{{ b.prepaid_amount }}
+                            {% if b.balance_amount > 0 %}
+                                <div style="font-size: 0.72rem; color: var(--accent); margin-top: 0.2rem; font-weight: normal; line-height: 1.1;">
+                                    (₹{{ b.balance_amount }} due on visit)
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="recent-label">Start Date</div>
+                        <div class="recent-val">{{ b.start_date }} at {{ b.start_time }}</div>
+                    </div>
+                    <div>
+                        <div class="recent-label">End Date</div>
+                        <div class="recent-val">{{ b.end_date }} at {{ b.end_time }}</div>
+                    </div>
+                </div>
+                
+                <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.5rem;">
+                    <div class="recent-label">Delivery Address</div>
+                    <div class="recent-val" style="font-size: 0.95rem; font-weight: 400; margin-top: 0.2rem; line-height: 1.4;">
+                        {{ b.customer_address }}
+                    </div>
+                </div>
+                
+                <div style="font-size: 0.85rem; color: var(--text-muted); display: flex; justify-content: space-between; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 0.4rem; margin-top: 0.4rem;">
+                    <span>Method: {{ b.get_payment_method_display }}</span>
+                    <span>Booked: {{ b.created_at|date:"d M Y, h:i A" }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="glass-card" style="text-align: center; padding: 3rem 0; color: var(--text-muted);">
+            <span style="font-size: 3rem;">🚗</span>
+            <p style="margin-top: 1rem;">No bookings found. Start a booking to hit the road!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

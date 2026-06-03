@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Web Wizards Car Rentals - Reject Booking #{{ booking.id }}{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="glass-card auth-card" style="max-width: 600px; width: 100%;">
+        <h2 class="card-title" style="color: var(--error);">Reject Booking #{{ booking.id }}</h2>
+        
+        <div style="background: rgba(255, 77, 77, 0.08); border: 1px solid rgba(255, 77, 77, 0.15); padding: 1.2rem; border-radius: 12px; margin-bottom: 2rem; font-size: 0.95rem; line-height: 1.5;">
+            <p><strong>Renter:</strong> {{ booking.customer_name }} (Age: {{ booking.customer_age }})</p>
+            <p><strong>Vehicle:</strong> {{ booking.vehicle.name }}</p>
+            <p><strong>Rental Period:</strong> {{ booking.start_date }} to {{ booking.end_date }} ({{ booking.num_days }} Day{% if booking.num_days > 1 %}s{% endif %})</p>
+            <p><strong>Total Amount:</strong> ₹{{ booking.total_amount }}</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <div class="form-group {% if form.predefined_reason.errors %}has-error{% endif %}">
+                <label class="form-label" for="id_predefined_reason">Rejection Reason</label>
+                {{ form.predefined_reason }}
+                {% if form.predefined_reason.errors %}
+                    <ul class="error-list">
+                        {% for error in form.predefined_reason.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div class="form-group {% if form.custom_description.errors %}has-error{% endif %}" id="custom-reason-group">
+                <label class="form-label" for="id_custom_description">Description / Custom Details</label>
+                {{ form.custom_description }}
+                {% if form.custom_description.errors %}
+                    <ul class="error-list">
+                        {% for error in form.custom_description.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <a href="{% url 'home' %}" class="btn btn-secondary" style="flex: 1;">Cancel</a>
+                <button type="submit" class="btn btn-danger" style="flex: 1;">Confirm Rejection</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var reasonSelect = document.getElementById("id_predefined_reason");
+        var customInput = document.getElementById("id_custom_description");
+
+        function toggleCustomRequired() {
+            if (reasonSelect.value === "Other") {
+                customInput.setAttribute("required", "required");
+                customInput.setAttribute("placeholder", "Please specify the custom reason here (required)...");
+            } else {
+                customInput.removeAttribute("required");
+                customInput.setAttribute("placeholder", "Provide optional specific details...");
+            }
+        }
+
+        reasonSelect.addEventListener("change", toggleCustomRequired);
+        toggleCustomRequired(); // run on load
+    });
+</script>
+{% endblock %}
