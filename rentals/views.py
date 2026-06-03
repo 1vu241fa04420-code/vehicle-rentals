@@ -637,51 +637,7 @@ def send_whatsapp_message(phone_number, message_text):
         safe_print(f"REAL WHATSAPP ERROR: Failed to send to {phone_number}: {str(e)}")
 
 def send_booking_notifications(booking):
-    # 1. Send Email (if email is provided)
-    if booking.customer_email:
-        subject = f"Booking Confirmation #WWR-{booking.id} - Web Wizards Car Rentals"
-        email_body = f"""Dear {booking.customer_name},
-
-Thank you for booking with Web Wizards Car Rentals! Your reservation is confirmed.
-
-Booking Details:
----------------------------------------------
-Booking ID: #WWR-{booking.id}
-Vehicle: {booking.vehicle.name} ({booking.vehicle.get_vehicle_type_display()})
-Start Date: {booking.start_date} at {booking.start_time}
-End Date: {booking.end_date} at {booking.end_time}
-Duration: {booking.num_days} day(s)
-Quantity: {booking.quantity}
-Total Amount: Rs. {booking.total_amount}
-Amount Paid Now: Rs. {booking.prepaid_amount}
-Balance to Pay on Visit: Rs. {booking.balance_amount}
----------------------------------------------
-
-Pickup Location:
-Pattabhipuram 3rd line, Guntur, Andhra Pradesh - 522006
-Besides DRM office.
-Phone: 7337060329
-
-If you have any questions, feel free to contact us.
-
-Safe Travels,
-Web Wizards Car Rentals Team"""
-        
-        try:
-            from django.core.mail import send_mail
-            from django.conf import settings
-            send_mail(
-                subject=subject,
-                message=email_body,
-                from_email=getattr(settings, 'EMAIL_HOST_USER', '1vu.241fa04420@gmail.com'),
-                recipient_list=[booking.customer_email],
-                fail_silently=True,
-            )
-            safe_print(f"EMAIL LOG: Sent booking confirmation email to {booking.customer_email} for Booking #WWR-{booking.id}")
-        except Exception as e:
-            safe_print(f"EMAIL ERROR: Failed to send email to {booking.customer_email}: {str(e)}")
-
-    # 2. Send WhatsApp message (ASCII only to prevent terminal encoding crashes)
+    # Send WhatsApp message (ASCII only to prevent terminal encoding crashes)
     whatsapp_text = f"""*Web Wizards Car Rentals - Booking Confirmed!*
 
 Hello {booking.customer_name}, your booking #WWR-{booking.id} is confirmed.
