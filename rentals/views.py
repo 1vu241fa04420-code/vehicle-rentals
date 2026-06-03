@@ -580,10 +580,8 @@ import sys
 def safe_print(text):
     try:
         print(text)
-    except UnicodeEncodeError:
-        encoding = sys.stdout.encoding or 'utf-8'
-        encoded_text = text.encode(encoding, errors='replace')
-        print(encoded_text.decode(encoding))
+    except Exception:
+        pass
 
 def send_whatsapp_message(phone_number, message_text):
     import urllib.request
@@ -677,7 +675,7 @@ Web Wizards Car Rentals Team"""
                 message=email_body,
                 from_email=getattr(settings, 'EMAIL_HOST_USER', '1vu.241fa04420@gmail.com'),
                 recipient_list=[booking.customer_email],
-                fail_silently=False,
+                fail_silently=True,
             )
             safe_print(f"EMAIL LOG: Sent booking confirmation email to {booking.customer_email} for Booking #WWR-{booking.id}")
         except Exception as e:
@@ -714,7 +712,7 @@ def payment_success(request):
     for booking in cart_items:
         booking.payment_status = 'Completed'
         booking.save()
-        print(f"Conformation message sent to given mobile number and mail for Booking #WWR-{booking.id} to phone number {booking.customer_phone} (Customer: {booking.customer_name}, Amount Paid: Rs. {booking.prepaid_amount})")
+        safe_print(f"Conformation message sent to given mobile number and mail for Booking #WWR-{booking.id} to phone number {booking.customer_phone} (Customer: {booking.customer_name}, Amount Paid: Rs. {booking.prepaid_amount})")
         send_booking_notifications(booking)
         
     # Clean up session values for the wizard
