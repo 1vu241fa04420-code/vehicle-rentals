@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: vehicle-rentals
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn vehicle_rental.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.4
+      - key: DJANGO_SETTINGS_MODULE
+        value: vehicle_rental.settings
